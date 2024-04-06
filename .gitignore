@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# config
+telegram.json
+firebase_config.json
+
+# env
+/test-env/
+
+# database
+./database.csv
+
+# metadata MacOs
+.DS_Store
+
