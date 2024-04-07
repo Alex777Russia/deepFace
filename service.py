@@ -1,41 +1,59 @@
 import pyrebase
+import json
 
-config = {
-  "apiKey": "AIzaSyB39yl0BjlMeI44iP91mBGGCqL4BcrMelk",
-  "authDomain": "tg-recsys-bot.firebaseapp.com",
-  "databaseURL": "https://tg-recsys-bot-default-rtdb.europe-west1.firebasedatabase.app",
-  "projectId": "tg-recsys-bot",
-  "storageBucket": "tg-recsys-bot.appspot.com",
-  "messagingSenderId": "156859279337",
-  "appId": "1:156859279337:web:968dd9bbfcbdd223080d78",
-  "measurementId": "G-3TDY4N7RL1",
-  "downloadTokens": None
-}
+class Service:
+  __instance = None
 
-REMOTE_PATH = "gallery/"
-LOCAL_PATH = "/Users/aleksejshevcenko/Documents/BMSTU/Semester_6/TechAI/test/photos/"
+  __app = None
+  __storage = None
+  __config = None
 
-app = pyrebase.initialize_app(config)
-
-storage = app.storage()
-
-# POST
-def post_photo(local_path: str, url: str):
-  url = url.split("/")[1]
-  try:
-    storage.child(REMOTE_PATH + url).put(local_path)
-  except:
-    print("ERROR: POST PHOTO")
-    return None
+  def __new__(cls, *args, **kwargs):
+    if cls.__instance is None:
+      cls.__instance = super().__new__(cls)
+ 
+    return cls.__instance
   
-  return "200"
+  def __init__(self, path_storage_config="firebase_storage.json", local_path="./photos/", firebase_path="gallery/"):
+    self.__LOCAL_PATH = local_path
+    self.__REMOTE_PATH = firebase_path
 
-# GET
-def get_photo(save_local_path: str, from_url: str):
-  try:
-    storage.child(REMOTE_PATH + from_url).download(path=LOCAL_PATH, filename=save_local_path)
-  except:
-    print("ERROR: GET PHOTO")
-    return None
+    self.__load_storage(path_storage_config)
+    self.__app = pyrebase.initialize_app(self.__config)
+    self.__storage = self.__app.storage()
 
-  return "200"
+  def __load_storage(self, path='firebase_storage.json'):
+    self.__config = json.load(open(path, 'rb'))
+
+  # POST
+  def post_photo(self, from_local_path: str, to_url: str):
+
+    url = to_url.split("/")[1]
+    print()
+    print(self.__REMOTE_PATH + url)
+    print(from_local_path)
+    print()
+    try:
+      self.__storage.child(self.__REMOTE_PATH + url).put(from_local_path)
+    except Exception as e:
+      print("ERROR: POST PHOTO")
+      return None
+    
+    return "200"
+
+  # GET
+  def get_photo(self, to_local_path: str, from_url: str):
+
+    print()
+    print(self.__REMOTE_PATH + from_url)
+    print(to_local_path)
+    print()
+  
+    try:
+      self.__storage.child(self.__REMOTE_PATH + from_url).download(path=self.__LOCAL_PATH, filename=to_local_path)
+    except Exception as e:
+      print("ERROR: GET PHOTO")
+      return None
+
+    return "200"
+  
