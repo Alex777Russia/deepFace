@@ -8,9 +8,11 @@ import hashlib
 from model import Model
 
 
-###
+######
+#
 #       Configuration
-###
+#       
+#####
 
 LOCAL_PATH = "./photos/"
 FIREBASE_PATH = "gallery/"
@@ -23,9 +25,11 @@ bot = telebot.TeleBot(telegram_token["TOKEN"])
 waiting_for = {}
 
 
-###
+######
+#
 #       Handlers
-###
+#       
+#####
 
 # Обработчик старта
 @bot.message_handler(commands=['start'])
@@ -121,42 +125,80 @@ def handle_photo(message):
     else:
         print(f"ERROR: status ERR not define\n")
 
+def verifyCommand(chat_id):
+    # Какая-то команда уже находится в очереди?
+    if chat_id in waiting_for:
+        reject = ""
+        if waiting_for[chat_id]["type"] == "CMPR":
+            reject = "Сравнение было отменено"
+        elif waiting_for[chat_id]["type"] == "ANAL":
+            reject = "Анализ фотографии был отменён"
+        elif waiting_for[chat_id]["type"] == "FIND":
+            reject = "Поиск фотографии был отменён"
+        elif waiting_for[chat_id]["type"] == "ADD":
+            reject = "Добавление фотографии было отменено"
+        del waiting_for[chat_id]
+        return reject
+    return None
 
-####
+
+######
+#
 #       Buttons
-####
+#       
+#####
         
 @bot.message_handler(commands=["Информация"])
 def info_btn(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id=chat_id, text='Этот бот сделан командой GoodAi:\nПетросов, Четверина, Уткин, Шемет и Шевченко\n\nМои возможности:\n   1) Сравнение людей на двух изображений\n(необходимо загрузить два изображения) и бот ответит, один ли человек изображён на фотографиях.\n   2) Поиск человека по базе данных изображения\n(необходимо загрузить одно изображение) и бот ответит тремя двумя самыми похожими фотографиями.\n   3) Анализ фотографии на пол, рассовую принадлежность, возраст и эмоцю\n(необходимо отправить 1 фото)\n   4) Добавить фотографию в общую базу данных всех фотографий!\nДля выбора опций нажмите на далее соотвествующую команду')
+    bot.send_message(chat_id=chat_id, text='Этот бот разработан командой GoodAI:\n- Петросов Арсен\n- Четверина Александра\n- Уткин Тимофей\n- Шемет Александра\n- Шевченко Алексей\n\nМои возможности:\n   1) Сравнение людей на двух изображениях\n(необходимо загрузить два изображения) и бот ответит, один ли человек изображён на фотографиях.\n   2) Поиск человека по базе данных\n(необходимо загрузить одно изображение) и бот ответит двумя фотографиями с самыми похожими людьми.\n   3) Анализ человекечких признаков - пол, возраст, рассовую принадлежность и текущую эмоцю\n(необходимо отправить 1 фото)\n   4) Добавить фотографию в общую базу данных всех фотографий!\nДля выбора опций нажмите далее на соотвествующую команду')
 
 
 @bot.message_handler(commands=["Сравнение"])
 def compare_btn(message):
     chat_id = message.chat.id
-    waiting_for[chat_id] = {'need': 2, 'count': 2, 'function': model.compare_photos}
+
+    isAlready = verifyCommand(chat_id)
+    if isAlready != None:
+        bot.send_message(chat_id=chat_id, text=isAlready)
+
+    waiting_for[chat_id] = {'need': 2, 'count': 2, 'type': 'CMPR', 'function': model.compare_photos}
     bot.send_message(chat_id=chat_id, text='Отлично, вы выбрали сравнение людей на 2-х фотографиях! Теперь отправьте две фотографии')  
 
 
 @bot.message_handler(commands=['Анализ'])
 def analysis_btn(message):
     chat_id = message.chat.id
-    waiting_for[chat_id] = {'need': 1, 'count': 1, 'function': model.analysis_photo}
+
+    isAlready = verifyCommand(chat_id)
+    if isAlready != None:
+        bot.send_message(chat_id=chat_id, text=isAlready)
+
+    waiting_for[chat_id] = {'need': 1, 'count': 1, 'type': 'ANAL', 'function': model.analysis_photo}
     bot.send_message(chat_id=chat_id, text='Отлично, вы выбрали анализ признаков человека! Теперь отправьте фотографию')  
 
 
 @bot.message_handler(commands=['Поиск'])
 def find_btn(message):
     chat_id = message.chat.id
-    waiting_for[chat_id] = {'need': 1, 'count': 1, 'function': model.find_photo}
+
+    isAlready = verifyCommand(chat_id)
+    if isAlready != None:
+        bot.send_message(chat_id=chat_id, text=isAlready)
+
+    waiting_for[chat_id] = {'need': 1, 'count': 1, 'type': 'FIND', 'function': model.find_photo}
     bot.send_message(chat_id=chat_id, text='Отлично, вы выбрали поиск человека! Теперь отправьте фотографию')
 
 
 @bot.message_handler(commands=['Добавление'])
 def add_btn(message):
     chat_id = message.chat.id
-    waiting_for[chat_id] = {'need': 1, 'count': 1, 'function': model.add_photo}
+
+    isAlready = verifyCommand(chat_id)
+    if isAlready != None:
+        bot.send_message(chat_id=chat_id, text=isAlready)
+
+    waiting_for[chat_id] = {'need': 1, 'count': 1, 'type': 'ADD', 'function': model.add_photo}
     bot.send_message(chat_id=chat_id, text='Отлично, вы выбрали поиск человека! Теперь отправьте фотографию')
 
 
