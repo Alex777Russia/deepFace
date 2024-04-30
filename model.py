@@ -4,6 +4,7 @@ import pandas as pd
 import datetime
 
 from service import Service
+from constants import ERRORS, RESPONSE
 
 
 class Model:
@@ -68,7 +69,7 @@ class Model:
             embedding = embedding_objs[0]["embedding"]
             embedding = np.array(embedding)
         except Exception as e:
-            print("Получение эмбединга поиска")
+            print(ERRORS.MODEL["FindEmb"])
             return ('FIND', data, 'ERR')
     
         result = []
@@ -81,7 +82,7 @@ class Model:
             result = sorted(result, reverse=False)
             data = [result[-1], result[-2]]
         except Exception as e:
-            print("Поиск лучших двух фотографий")
+            print(ERRORS.MODEL["FindToBest"])
             return ('FIND', data, 'ERR')
 
         try:
@@ -89,9 +90,10 @@ class Model:
             result_photo_2 = self.__service.get_photo(to_local_path=self.__LOCAL_PATH + data[1][1], from_url=data[1][1])
 
             if (result_photo_1 == None) or (result_photo_2 == None):
+                print(ERRORS.MODEL["FindNoneReturnPhoto"])
                 return ('FIND', None, 'ERR')
         except Exception as e:
-            print("Ошибка запроса GET")
+            print(ERRORS.MODEL["FindGet"])
             return ('FIND', None, 'ERR')
 
         return ('FIND', data, 'OK')
@@ -108,7 +110,7 @@ class Model:
         try:
             data = analyze(img_path=path, actions=['age', 'gender', 'race', 'emotion'])
         except Exception as e:
-            print("Работа метода анализа")
+            print(ERRORS.MODEL["AnalEmb"])
             return ('ANLS', None, 'ERR')
     
         try:
@@ -118,9 +120,13 @@ class Model:
             race = data['dominant_race']
             emotion = data['dominant_emotion']
 
+            gender = RESPONSE.TRANSLATE[gender]
+            race = RESPONSE.TRANSLATE[race]
+            emotion = RESPONSE.TRANSLATE[emotion]
+
             data = f'Результат анализа\n возраст: {age}\n пол: {gender}\n национальность: {race}\n эмоция: {emotion}'
         except Exception as e:
-            print("Парсинг джейсона анализа")
+            print(ERRORS.MODEL["AnalPars"])
             return ('ANLS', None, 'ERR')
     
         return ('ANLS', data, 'OK')
@@ -137,7 +143,7 @@ class Model:
         try:
             data = verify(img1_path=path1, img2_path=path2, detector_backend=self.__BACKEND)
         except Exception as e:
-            print("Работада метода верификации")
+            print(ERRORS.MODEL["VerEmb"])
             return ('CMPR', None, 'ERR')
 
         try:
@@ -149,7 +155,7 @@ class Model:
 
             data = f'Результат верификации\n схожесть: {verified}\n расстрояние: {distance}\n порог: {treshold_to_verify}\n модель: {model}\n метрика схожести: {similarity_metric}'
         except Exception as e:
-            print("Парсинг джейсона анализа")
+            print(ERRORS.MODEL["VerPars"])
             return ('CMPR', None, 'ERR')
     
         return ('CMPR', data, 'OK')
@@ -166,7 +172,7 @@ class Model:
         list_of_paths = self.__db.path.to_list()
 
         if path.split("/")[1] in list_of_paths:
-            print("Фотография уже есть в БД")
+            print(ERRORS.MODEL["AddAlreadyExist"])
             data = 'Фотография не была добавлена, так как она уже есть в БД!'
             return ('ADD', data, 'OK')
 
@@ -175,8 +181,8 @@ class Model:
                       detector_backend=self.__BACKEND, 
                       img_path=path)
         except Exception as e:
-            print("Получение эмбединга")
-            return ('ADD', None, 'ERR: Получение эмбединга')
+            print(ERRORS.MODEL["AddEmb"])
+            return ('ADD', None, 'ERR')
 
         try:
             messageTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -185,10 +191,11 @@ class Model:
             result_post_photo = self.__service.post_photo(from_local_path=path, to_url=path)
             
             if result_post_photo == None:
+                print(ERRORS.MODEL["AddPost"])
                 return ('ADD', None, 'ERR')
         except Exception as e:
-            print("Отправка в БД")
-            return ('ADD', None, 'ERR: Отправка в БД')
+            print(ERRORS.MODEL["AddPost"])
+            return ('ADD', None, 'ERR')
 
         try:
             dict = {
@@ -205,13 +212,14 @@ class Model:
             update_dataframe = pd.concat([database_img, new_images], ignore_index = True)
             update_dataframe.to_csv("database.csv")
         except Exception as e:
-            print("Добавление в dataset")
+            print(ERRORS.MODEL["AddDataSet"])
             return ('ADD', None, 'ERR: Добавление в dataset')
     
         try:
             self.__db = self.__prepare_data("database.csv")
         except Exception as e:
-            print("Обновление доступа к БД")
+            print(ERRORS.MODEL["AddDataSet"])
+            print(ERRORS.MODEL["AddUpdateDB"])
             data = 'Фотография не была добавлена\nЧто-то пошло не так.. 😔'
             return ('ADD', data, 'OK')
 

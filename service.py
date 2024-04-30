@@ -1,6 +1,9 @@
 import pyrebase
 import json
 
+from constants import ERRORS, RESPONSE
+
+
 class Service:
   __instance = None
 
@@ -27,32 +30,21 @@ class Service:
 
   # POST
   def post_photo(self, from_local_path: str, to_url: str):
-
     url = to_url.split("/")[1]
-    print()
-    print(self.__REMOTE_PATH + url)
-    print(from_local_path)
-    print()
     try:
       self.__storage.child(self.__REMOTE_PATH + url).put(from_local_path)
     except Exception as e:
-      print("ERROR: POST PHOTO")
+      print(ERRORS.STRG["POST"])
       return None
     
     return "200"
 
   # GET
   def get_photo(self, to_local_path: str, from_url: str):
-
-    print()
-    print(self.__REMOTE_PATH + from_url)
-    print(to_local_path)
-    print()
-  
     try:
       self.__storage.child(self.__REMOTE_PATH + from_url).download(path=self.__LOCAL_PATH, filename=to_local_path)
     except Exception as e:
-      print("ERROR: GET PHOTO")
+      print(ERRORS.STRG["GET"])
       return None
 
     return "200"
